@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import pool from '../config/database.js';
 import { NotifyService } from '../services/notify.service.js';
-import { SensorData, DeviceSettings } from '../types/index.js';
+import { SensorData } from '../types/SensorDate.js';
+import { SettingsData } from '../types/SettingsData.js';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
     );
 
     const settingsResult = await pool.query('SELECT * FROM device_settings WHERE device_id = $1', [data.device_id]);
-    const settings: DeviceSettings = settingsResult.rows[0];
+    const settings: SettingsData = settingsResult.rows[0];
 
     if (settings) {
       const health = (data.wind_speed / settings.wind_speed_baseline) * 100;
