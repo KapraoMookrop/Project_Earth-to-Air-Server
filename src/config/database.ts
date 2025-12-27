@@ -12,7 +12,6 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false 
   },
-  options: '-c timezone=Asia/Bangkok'
 });
 
 export default pool;
