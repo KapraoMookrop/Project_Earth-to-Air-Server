@@ -38,7 +38,7 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
 router.get('/latest/:deviceId', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT * FROM sensor_readings WHERE device_id = $1 ORDER BY recorded_at DESC LIMIT 1',
+      'SELECT * FROM current_sensor_readings WHERE device_id = $1 LIMIT 1',
       [req.params.deviceId]
     );
     res.json(result.rows[0]);
@@ -53,8 +53,8 @@ router.get('/history/:deviceId', async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
       `SELECT recorded_at as time, temp_ambient, temp_ground, pm2_5, voc_level, wind_speed 
-       FROM sensor_readings 
-       WHERE device_id = $1 AND recorded_at > NOW() - INTERVAL '${hours} hours' 
+       FROM dialy_sensor_readings 
+       WHERE device_id = $1
        ORDER BY recorded_at ASC`,
       [req.params.deviceId]
     );
