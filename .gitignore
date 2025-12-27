@@ -51,5 +51,5 @@ Thumbs.db
 .history/*
 
 **/desktop.ini
-
+.env
 desktop.ini

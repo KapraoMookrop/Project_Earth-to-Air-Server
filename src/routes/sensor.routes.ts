@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import pool from '../config/database.js';
-import { NotifyService } from '../services/notify.service';
-import { SensorData, DeviceSettings } from '../types/index';
+import { NotifyService } from '../services/notify.service.js';
+import { SensorData, DeviceSettings } from '../types/index.js';
 
 const router = Router();
 
@@ -10,7 +10,6 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
   const data: SensorData = req.body;
 
   try {
-    // บันทึกค่าเซนเซอร์
     await pool.query(
       `INSERT INTO sensor_readings 
        (device_id, temp_ambient, temp_ground, humidity, pm1_0, pm2_5, voc_level, wind_speed) 
@@ -18,7 +17,6 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
       [data.device_id, data.temp_ambient, data.temp_ground, data.humidity, data.pm1_0, data.pm2_5, data.voc_level, data.wind_speed]
     );
 
-    // ตรวจสอบการแจ้งเตือนไส้กรอง
     const settingsResult = await pool.query('SELECT * FROM device_settings WHERE device_id = $1', [data.device_id]);
     const settings: DeviceSettings = settingsResult.rows[0];
 
@@ -32,7 +30,7 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
 
     res.status(201).json({ status: 'success' });
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' });
+    res.status(500).json({ error: 'Internal Server Error' + error});
   }
 });
 
