@@ -12,9 +12,9 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
 
   try {
     await pool.query(
-      `INSERT INTO sensor_readings 
-       (device_id, temp_ambient, temp_ground, humidity, pm1_0, pm2_5, voc_level, wind_speed) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      `UPDATE current_sensor_readings 
+       SET temp_ambient = $2, temp_ground = $3, humidity = $4, pm1_0 = $5, pm2_5 = $6, voc_level = $7, wind_speed = $8 
+       WHERE device_id = $1`,
       [data.device_id, data.temp_ambient, data.temp_ground, data.humidity, data.pm1_0, data.pm2_5, data.voc_level, data.wind_speed]
     );
 
@@ -44,7 +44,7 @@ router.get('/latest/:deviceId', async (req: Request, res: Response) => {
     );
     res.json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' });
+    res.status(500).json({ error: 'Database Error' + error });
   }
 });
 
@@ -61,7 +61,7 @@ router.get('/history/:deviceId', async (req: Request, res: Response) => {
     );
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' });
+    res.status(500).json({ error: 'Database Error' + error});
   }
 });
 
