@@ -11,7 +11,8 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || '5432'),
   ssl: {
     rejectUnauthorized: false 
-  }
+  },
+  options: '-c timezone=Asia/Bangkok'
 });
 
 export default pool;
