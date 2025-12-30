@@ -30,7 +30,7 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
 
     res.status(201).json({ status: 'success' });
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' + error});
+    res.status(500).json({ error: 'Internal Server Error' + error });
   }
 });
 
@@ -45,6 +45,20 @@ router.get('/latest/:deviceId', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Database Error' + error });
   }
 });
+
+router.get('/info', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM configuration'
+    );
+
+    res.json(result.rows); // ✅ ส่งเฉพาะข้อมูล
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Database Error' });
+  }
+});
+
 
 router.get('/settings/:deviceId', async (req: Request, res: Response) => {
   try {
@@ -70,7 +84,7 @@ router.get('/history/:deviceId', async (req: Request, res: Response) => {
     );
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' + error});
+    res.status(500).json({ error: 'Database Error' + error });
   }
 });
 
