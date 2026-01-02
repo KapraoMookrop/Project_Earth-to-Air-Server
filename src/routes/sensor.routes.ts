@@ -52,7 +52,7 @@ router.get('/info', async (req: Request, res: Response) => {
       'SELECT * FROM configuration'
     );
 
-    res.json(result.rows); // ✅ ส่งเฉพาะข้อมูล
+    res.json(result.rows);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Database Error' });
@@ -72,19 +72,38 @@ router.get('/settings/:deviceId', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/history/:deviceId', async (req: Request, res: Response) => {
-  const hours = req.query.hours || 24;
+router.get('/history/:deviceId/:type', async (req: Request, res: Response) => {
+  const { deviceId, type } = req.params;
+
+  let sql = '';
+
   try {
-    const result = await pool.query(
-      `SELECT recorded_at as time, temp_ambient, temp_ground, pm2_5, voc_level, wind_speed 
-       FROM dialy_sensor_readings 
-       WHERE device_id = $1
-       ORDER BY recorded_at ASC`,
-      [req.params.deviceId]
-    );
+    if (type === '1') {
+      sql = `
+        SELECT *
+        FROM vw_sensor_daily_avg
+        WHERE device_id = $1
+        ORDER BY time ASC
+      `;
+    }
+    else if (type === '2') {
+      sql = `
+        SELECT *
+        FROM vw_sensor_hourly_avg
+        WHERE device_id = $1
+        ORDER BY time ASC
+      `;
+    }
+    else {
+      return res.status(400).json({ error: 'Invalid type (1=daily, 2=hourly)' });
+    }
+
+    const result = await pool.query(sql, [deviceId]);
     res.json(result.rows);
+
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' + error });
+    console.error(error);
+    res.status(500).json({ error: 'Database Error' });
   }
 });
 
