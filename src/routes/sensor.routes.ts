@@ -82,17 +82,29 @@ router.get('/send-to-line/:userId', async (req: Request, res: Response) => {
       'SELECT * FROM vw_report_to_line WHERE user_id = $1 LIMIT 1',
       [req.params.userId]
     );
-    const message = `📊 Earth-To-Air Status\n
-                      อุณหภูมิอากาศ: ${result.rows[0].temp_ambient} °C\n
-                      อุณหภูมิพื้นดิน: ${result.rows[0].temp_ground} °C\n
-                      ความชื้น: ${result.rows[0].humidity} %\n
-                      PM1.0: ${result.rows[0].pm1_0} µg/m³\n
-                      PM2.5: ${result.rows[0].pm2_5} µg/m³\n
-                      VOC Level: ${result.rows[0].voc_level} ppb\n
-                      ความเร็วลม: ${result.rows[0].wind_speed} m/s\n
-                      บันทึกล่าสุดเมื่อ: ${new Date(result.rows[0].recorded_at).toLocaleString()}`;
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลสำหรับผู้ใช้นี้' });
+    }
+
+    const row = result.rows[0];
+    if (!row.line_user_id) {
+      return res.status(400).json({ message: 'ผู้ใช้ยังไม่ได้เชื่อม LINE' });
+    }
+
+
+    const message =`📊 Earth-To-Air Status
+                    อุณหภูมิอากาศ: ${row.temp_ambient} °C
+                    อุณหภูมิพื้นดิน: ${row.temp_ground} °C
+                    ความชื้น: ${row.humidity} %
+                    PM1.0: ${row.pm1_0} µg/m³
+                    PM2.5: ${row.pm2_5} µg/m³
+                    VOC: ${row.voc_level} ppb
+                    ความเร็วลม: ${row.wind_speed} m/s
+                    บันทึกล่าสุด: ${new Date(row.recorded_at).toLocaleString('th-TH')}`;
+
     await NotifyService.sendLineMessage(result.rows[0].line_user_id, message);
-    res.status(201).json("ส่งการแจ้งเตือนไปยัง LINE เรียบร้อยแล้ว");
+    res.status(200).json("ส่งการแจ้งเตือนไปยัง LINE เรียบร้อยแล้ว");
   } catch (error) {
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
