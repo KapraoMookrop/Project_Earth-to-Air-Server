@@ -76,41 +76,6 @@ router.get('/settings/:deviceId', async (req: Request, res: Response) => {
   }
 });
 
-router.get('/send-to-line/:userId', async (req: Request, res: Response) => {
-  try {
-    const result = await pool.query(
-      'SELECT * FROM vw_report_to_line WHERE user_id = $1 LIMIT 1',
-      [req.params.userId]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'ไม่พบข้อมูลสำหรับผู้ใช้นี้' });
-    }
-
-    const row = result.rows[0];
-    if (!row.line_user_id) {
-      return res.status(400).json({ message: 'ผู้ใช้ยังไม่ได้เชื่อม LINE' });
-    }
-    const message = [
-      '📊 Earth-To-Air Status',
-      `🌡️ อุณหภูมิอากาศ: ${row.temp_ambient} °C`,
-      `🌱 อุณหภูมิพื้นดิน: ${row.temp_ground} °C`,
-      `💧 ความชื้น: ${row.humidity} %`,
-      `🫧 PM1.0: ${row.pm1_0} µg/m³`,
-      `🌫️ PM2.5: ${row.pm2_5} µg/m³`,
-      `🧪 VOC: ${row.voc_level} ppb`,
-      `💨 ความเร็วลม: ${row.wind_speed} m/s`,
-      `⏱️ บันทึกล่าสุด: ${new Date(row.recorded_at).toLocaleString('th-TH')}`,
-    ].join('\n');
-
-
-    await NotifyService.sendLineMessage(result.rows[0].line_user_id, message);
-    res.status(200).json("ส่งการแจ้งเตือนไปยัง LINE เรียบร้อยแล้ว");
-  } catch (error) {
-    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
-  }
-});
-
 router.get('/history/:deviceId/:type', async (req: Request, res: Response) => {
   const { deviceId, type } = req.params;
 
@@ -200,11 +165,72 @@ router.post('/login', async (req, res) => {
   }
 });
 
-
 const LINE_CHANNEL_ID = process.env.LINE_CHANNEL_ID;
 const CALLBACK_URL = process.env.LINE_CALLBACK_URL;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 const CLIENT_URL = process.env.CLIENT_URL;
+router.get('/cancel-connect-line/:userId', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM vw_report_to_line WHERE user_id = $1 LIMIT 1',
+      [req.params.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลสำหรับผู้ใช้นี้' });
+    }
+
+    const row = result.rows[0];
+    if (!row.line_user_id) {
+      return res.status(400).json({ message: 'ผู้ใช้ยังไม่ได้เชื่อม LINE' });
+    }
+    
+    await pool.query(
+      'UPDATE users SET line_user_id = NULL WHERE id = $1',
+      [req.params.userId]
+    );
+    
+    res.status(200).json("ยกเลิกการเชื่อมต่อ LINE เรียบร้อยแล้ว");
+  } catch (error) {
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
+  }
+});
+
+router.get('/send-to-line/:userId', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM vw_report_to_line WHERE user_id = $1 LIMIT 1',
+      [req.params.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'ไม่พบข้อมูลสำหรับผู้ใช้นี้' });
+    }
+
+    const row = result.rows[0];
+    if (!row.line_user_id) {
+      return res.status(400).json({ message: 'ผู้ใช้ยังไม่ได้เชื่อม LINE' });
+    }
+    const message = [
+      '📊 Earth-To-Air Status',
+      `🌡️ อุณหภูมิอากาศ: ${row.temp_ambient} °C`,
+      `🌱 อุณหภูมิพื้นดิน: ${row.temp_ground} °C`,
+      `💧 ความชื้น: ${row.humidity} %`,
+      `🫧 PM1.0: ${row.pm1_0} µg/m³`,
+      `🌫️ PM2.5: ${row.pm2_5} µg/m³`,
+      `🧪 VOC: ${row.voc_level} ppb`,
+      `💨 ความเร็วลม: ${row.wind_speed} m/s`,
+      `⏱️ บันทึกล่าสุด: ${new Date(row.recorded_at).toLocaleString('th-TH')}`,
+    ].join('\n');
+
+
+    await NotifyService.sendLineMessage(result.rows[0].line_user_id, message);
+    res.status(200).json("ส่งการแจ้งเตือนไปยัง LINE เรียบร้อยแล้ว");
+  } catch (error) {
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
+  }
+});
+
 router.get('/auth/line/callback', async (req, res) => {
   const { code, state } = req.query;
   try {
