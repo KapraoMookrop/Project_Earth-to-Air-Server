@@ -34,7 +34,7 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
 
     res.status(201).json({ status: 'success' });
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' + error });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
@@ -46,7 +46,7 @@ router.get('/latest/:deviceId', async (req: Request, res: Response) => {
     );
     res.json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' + error });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
@@ -58,8 +58,7 @@ router.get('/info', async (req: Request, res: Response) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Database Error' });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error});
   }
 });
 
@@ -72,7 +71,7 @@ router.get('/settings/:deviceId', async (req: Request, res: Response) => {
     );
     res.json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' + error });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
@@ -106,8 +105,7 @@ router.get('/history/:deviceId/:type', async (req: Request, res: Response) => {
     res.json(result.rows);
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Database Error' });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error});
   }
 });
 
@@ -121,7 +119,7 @@ router.post('/signup', async (req, res) => {
     );
 
     if (checkDevice.rows.length == 0) {
-      return res.status(400).json({ error: 'Device ID not found' });
+      return res.status(400).json({ error: 'ไม่พบ Device ID นี้ในระบบ' });
     }
 
     await pool.query(
@@ -132,7 +130,7 @@ router.post('/signup', async (req, res) => {
     res.status(201).json({ status: 'success' });
 
   } catch (error) {
-    res.status(500).json({ error: 'Internal Server Error' + error });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
@@ -145,12 +143,12 @@ router.post('/login', async (req, res) => {
     );
 
     if (result.rows.length == 0) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(401).json({ error: 'ไม่พบชื่อผู้ใช้งานนี้ในระบบ' });
     }
 
     const checkPassword = await bcrypt.compare(data.password, result.rows[0].password);
     if (!checkPassword) {
-      return res.status(401).json({ error: 'Invalid password' });
+      return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
     } else {
       const UserData = {
         username: result.rows[0].username,
@@ -161,7 +159,7 @@ router.post('/login', async (req, res) => {
     }
 
   } catch (error) {
-    res.status(500).json({ error: 'Database Error' + error });
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
