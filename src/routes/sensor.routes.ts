@@ -152,6 +152,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
     } else {
       const UserData = {
+        user_id: result.rows[0].id,
         username: result.rows[0].username,
         is_connected_line: result.rows[0].line_user_id ? true : false,
       } as UserData;
@@ -168,24 +169,24 @@ router.post('/login', async (req, res) => {
 const LINE_CHANNEL_ID = process.env.LINE_CHANNEL_ID;
 const CALLBACK_URL = process.env.LINE_CALLBACK_URL;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
-router.get('/auth/line', (req, res) => {
-  if (!LINE_CHANNEL_ID || !CALLBACK_URL) {
-    return res.status(500).send('LINE env config missing');
-  }
+// router.get('/auth/line', (req, res) => {
+//   if (!LINE_CHANNEL_ID || !CALLBACK_URL) {
+//     return res.status(500).send('LINE env config missing');
+//   }
 
-  const state = Math.random().toString(36).substring(2);
-  const redirectUri = encodeURIComponent(CALLBACK_URL as string);
+//   const state = Math.random().toString(36).substring(2);
+//   const redirectUri = encodeURIComponent(CALLBACK_URL as string);
 
-  const lineLoginUrl =
-    'https://access.line.me/oauth2/v2.1/authorize' +
-    '?response_type=code' +
-    `&client_id=${LINE_CHANNEL_ID}` +
-    `&redirect_uri=${redirectUri}` +
-    `&state=${state}` +
-    '&scope=profile%20openid';
+//   const lineLoginUrl =
+//     'https://access.line.me/oauth2/v2.1/authorize' +
+//     '?response_type=code' +
+//     `&client_id=${LINE_CHANNEL_ID}` +
+//     `&redirect_uri=${redirectUri}` +
+//     `&state=${state}` +
+//     '&scope=profile%20openid';
 
-  res.redirect(lineLoginUrl);
-});
+//   res.redirect(lineLoginUrl);
+// });
 
 
 router.get('/auth/line/callback', async (req, res) => {

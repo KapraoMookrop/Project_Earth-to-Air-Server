@@ -1,4 +1,5 @@
 export interface UserData {
+    user_id: string;
     username: string;
     password: string;
     deviceId: string;
