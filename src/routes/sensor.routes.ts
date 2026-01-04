@@ -205,6 +205,19 @@ const LINE_CHANNEL_ID = process.env.LINE_CHANNEL_ID;
 const CALLBACK_URL = process.env.LINE_CALLBACK_URL;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 const CLIENT_URL = process.env.CLIENT_URL;
+router.get('/auth/line/connect/:userId', (req, res) => {
+  const userId = req.params.userId;
+  const lineAuthUrl =
+    'https://access.line.me/oauth2/v2.1/authorize' +
+    '?response_type=code' +
+    `&client_id=${LINE_CHANNEL_ID}` +
+    `&redirect_uri=${CALLBACK_URL}` +
+    `&state=${userId}` +
+    '&scope=profile%20openid';
+  res.redirect(lineAuthUrl);
+});
+
+
 router.get('/auth/line/callback', async (req, res) => {
   const { code, state } = req.query;
   try {
