@@ -156,7 +156,7 @@ router.post('/login', async (req, res) => {
         is_connected_line: result.rows[0].line_user_id ? true : false,
       } as UserData;
 
-      return res.status(200).json({ UserData });
+      return res.status(200).json(UserData);
     }
 
   } catch (error) {
