@@ -58,6 +58,7 @@ router.get('/info', async (req: Request, res: Response) => {
 
     res.json(result.rows);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error});
   }
 });
@@ -155,7 +156,7 @@ router.post('/login', async (req, res) => {
         is_connected_line: result.rows[0].line_user_id ? true : false,
       } as UserData;
 
-      return res.status(200).json({ status: 'success', userData: UserData });
+      return res.status(200).json({ userData: UserData });
     }
 
   } catch (error) {
