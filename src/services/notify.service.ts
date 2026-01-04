@@ -1,21 +1,38 @@
 import axios from 'axios';
 
 export class NotifyService {
-  static async sendLineNotify(token: string, message: string): Promise<void> {
-    if (!token) return;
+  // ค่า CHANNEL_ACCESS_TOKEN ได้มาจาก LINE Developers Console
+  private static readonly CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN';
+
+  static async sendLineMessage(userId: string, message: string): Promise<void> {
+    if (!userId) return;
     try {
       await axios.post(
-        'https://notify-api.line.me/api/notify',
-        `message=${encodeURIComponent(message)}`,
+        'https://api.line.me/v2/bot/message/push',
+        {
+          to: userId, // ส่งหา User ID รายบุคคล
+          messages: [
+            {
+              type: 'text',
+              text: message
+            }
+          ]
+        },
         {
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': `Bearer ${token}`
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.CHANNEL_ACCESS_TOKEN}`
           }
         }
       );
+      console.log('Message sent successfully');
     } catch (error) {
-      console.error('Line Notify Error:', error);
+      // ตรวจสอบ error จาก LINE API
+      if (axios.isAxiosError(error)) {
+        console.error('Line API Error:', error.response?.data);
+      } else {
+        console.error('Unexpected Error:', error);
+      }
     }
   }
 }

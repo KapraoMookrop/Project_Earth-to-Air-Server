@@ -3,6 +3,9 @@ import pool from '../config/database.js';
 import { NotifyService } from '../services/notify.service.js';
 import { SensorData } from '../types/SensorDate.js';
 import { SettingsData } from '../types/SettingsData.js';
+import axios from 'axios';
+import { UserData } from '../types/UserData.js';
+import bcrypt from "bcrypt";
 
 const router = Router();
 
@@ -24,7 +27,8 @@ router.post('/sensor-data', async (req: Request, res: Response) => {
       const health = (data.wind_speed / settings.wind_speed_baseline) * 100;
       if (health <= settings.filter_alert_threshold) {
         const message = `\n🚨 [Earth-To-Air Alert]\nเครื่อง: ${data.device_id}\nไส้กรองเริ่มตัน! ประสิทธิภาพเหลือ: ${health.toFixed(1)}%\nความเร็วลมปัจจุบัน: ${data.wind_speed} m/s`;
-        await NotifyService.sendLineNotify(settings.line_notify_token, message);
+        const userId = settings.line_notify_token;
+        await NotifyService.sendLineMessage(userId, message);
       }
     }
 
@@ -106,5 +110,136 @@ router.get('/history/:deviceId/:type', async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Database Error' });
   }
 });
+
+router.post('/signup', async (req, res) => {
+  const data: UserData = req.body;
+  const hashPassword = await bcrypt.hash(data.password, 10);
+  try {
+    const checkDevice = await pool.query(
+      `select * from devices where esp_id = $1`,
+      [data.deviceId]
+    );
+
+    if (checkDevice.rows.length == 0) {
+      return res.status(400).json({ error: 'Device ID not found' });
+    }
+
+    await pool.query(
+      `insert into users (username, password, device_id) values ($1, $2, $3)`,
+      [data.username, hashPassword, data.deviceId]
+    );
+
+    res.status(201).json({ status: 'success' });
+
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' + error });
+  }
+});
+
+router.post('/login', async (req, res) => {
+  const data: UserData = req.body;
+  try {
+    const result = await pool.query(
+      `select * from users where username = $1`,
+      [data.username]
+    );
+
+    if (result.rows.length == 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const checkPassword = await bcrypt.compare(data.password, result.rows[0].password);
+    if (!checkPassword) {
+      return res.status(401).json({ error: 'Invalid password' });
+    } else {
+      const UserData = {
+        username: result.rows[0].username,
+        is_connected_line: result.rows[0].line_user_id ? true : false,
+      } as UserData;
+
+      return res.status(200).json({ status: 'success', userData: UserData });
+    }
+
+  } catch (error) {
+    res.status(500).json({ error: 'Database Error' + error });
+  }
+});
+
+
+const LINE_CHANNEL_ID = process.env.LINE_CHANNEL_ID;
+const CALLBACK_URL = process.env.LINE_CALLBACK_URL;
+const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
+router.get('/auth/line', (req, res) => {
+  if (!LINE_CHANNEL_ID || !CALLBACK_URL) {
+    return res.status(500).send('LINE env config missing');
+  }
+
+  const state = Math.random().toString(36).substring(2);
+  const redirectUri = encodeURIComponent(CALLBACK_URL as string);
+
+  const lineLoginUrl =
+    'https://access.line.me/oauth2/v2.1/authorize' +
+    '?response_type=code' +
+    `&client_id=${LINE_CHANNEL_ID}` +
+    `&redirect_uri=${redirectUri}` +
+    `&state=${state}` +
+    '&scope=profile%20openid';
+
+  res.redirect(lineLoginUrl);
+});
+
+
+router.get('/auth/line/callback', async (req, res) => {
+  const { code, state } = req.query;
+  try {
+    const tokenRes = await axios.post(
+      'https://api.line.me/oauth2/v2.1/token',
+      new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code as string,
+        redirect_uri: CALLBACK_URL as string,
+        client_id: LINE_CHANNEL_ID as string,
+        client_secret: LINE_CHANNEL_SECRET as string
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      }
+    );
+
+    const accessToken = tokenRes.data.access_token;
+    const profileRes = await axios.get(
+      'https://api.line.me/v2/profile',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      }
+    );
+
+    const lineUserId = profileRes.data.userId;
+    const displayName = profileRes.data.displayName;
+
+    // 3. SAVE ลง DB (ตัวอย่าง console ก่อน)
+    console.log('LINE USER ID:', lineUserId);
+    console.log('DISPLAY NAME:', displayName);
+
+    // ตรงนี้เอาไปผูกกับ user ในระบบคุณ
+    // saveLineUser(userId, lineUserId);
+
+    res.send(`
+      <h2>เชื่อมต่อ LINE สำเร็จ 🎉</h2>
+      <p>ชื่อ: ${displayName}</p>
+      <p>LINE UserId: ${lineUserId}</p>
+    `);
+
+  } catch (err: any) {
+    console.error(err.response?.data || err);
+    res.status(500).send('LINE Login Failed');
+  }
+});
+
+
 
 export default router;
