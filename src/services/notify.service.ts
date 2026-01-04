@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 export class NotifyService {
-  // ค่า CHANNEL_ACCESS_TOKEN ได้มาจาก LINE Developers Console
-  private static readonly CHANNEL_ACCESS_TOKEN = 'YOUR_CHANNEL_ACCESS_TOKEN';
+  private static readonly CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
   static async sendLineMessage(userId: string, message: string): Promise<void> {
     if (!userId) return;
@@ -10,7 +9,7 @@ export class NotifyService {
       await axios.post(
         'https://api.line.me/v2/bot/message/push',
         {
-          to: userId, // ส่งหา User ID รายบุคคล
+          to: userId,
           messages: [
             {
               type: 'text',
@@ -26,8 +25,8 @@ export class NotifyService {
         }
       );
       console.log('Message sent successfully');
+      
     } catch (error) {
-      // ตรวจสอบ error จาก LINE API
       if (axios.isAxiosError(error)) {
         console.error('Line API Error:', error.response?.data);
       } else {
