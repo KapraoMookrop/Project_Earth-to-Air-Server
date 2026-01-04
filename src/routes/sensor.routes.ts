@@ -91,17 +91,18 @@ router.get('/send-to-line/:userId', async (req: Request, res: Response) => {
     if (!row.line_user_id) {
       return res.status(400).json({ message: 'ผู้ใช้ยังไม่ได้เชื่อม LINE' });
     }
+    const message = [
+      '📊 Earth-To-Air Status',
+      `🌡️ อุณหภูมิอากาศ: ${row.temp_ambient} °C`,
+      `🌱 อุณหภูมิพื้นดิน: ${row.temp_ground} °C`,
+      `💧 ความชื้น: ${row.humidity} %`,
+      `🫧 PM1.0: ${row.pm1_0} µg/m³`,
+      `🌫️ PM2.5: ${row.pm2_5} µg/m³`,
+      `🧪 VOC: ${row.voc_level} ppb`,
+      `💨 ความเร็วลม: ${row.wind_speed} m/s`,
+      `⏱️ บันทึกล่าสุด: ${new Date(row.recorded_at).toLocaleString('th-TH')}`,
+    ].join('\n');
 
-
-    const message =`📊 Earth-To-Air Status
-                    อุณหภูมิอากาศ: ${row.temp_ambient} °C
-                    อุณหภูมิพื้นดิน: ${row.temp_ground} °C
-                    ความชื้น: ${row.humidity} %
-                    PM1.0: ${row.pm1_0} µg/m³
-                    PM2.5: ${row.pm2_5} µg/m³
-                    VOC: ${row.voc_level} ppb
-                    ความเร็วลม: ${row.wind_speed} m/s
-                    บันทึกล่าสุด: ${new Date(row.recorded_at).toLocaleString('th-TH')}`;
 
     await NotifyService.sendLineMessage(result.rows[0].line_user_id, message);
     res.status(200).json("ส่งการแจ้งเตือนไปยัง LINE เรียบร้อยแล้ว");
