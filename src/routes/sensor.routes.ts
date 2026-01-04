@@ -169,25 +169,7 @@ router.post('/login', async (req, res) => {
 const LINE_CHANNEL_ID = process.env.LINE_CHANNEL_ID;
 const CALLBACK_URL = process.env.LINE_CALLBACK_URL;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
-// router.get('/auth/line', (req, res) => {
-//   if (!LINE_CHANNEL_ID || !CALLBACK_URL) {
-//     return res.status(500).send('LINE env config missing');
-//   }
-
-//   const state = Math.random().toString(36).substring(2);
-//   const redirectUri = encodeURIComponent(CALLBACK_URL as string);
-
-//   const lineLoginUrl =
-//     'https://access.line.me/oauth2/v2.1/authorize' +
-//     '?response_type=code' +
-//     `&client_id=${LINE_CHANNEL_ID}` +
-//     `&redirect_uri=${redirectUri}` +
-//     `&state=${state}` +
-//     '&scope=profile%20openid';
-
-//   res.redirect(lineLoginUrl);
-// });
-
+const CLIENT_URL = process.env.CLIENT_URL;
 
 router.get('/auth/line/callback', async (req, res) => {
   const { code, state } = req.query;
@@ -220,19 +202,22 @@ router.get('/auth/line/callback', async (req, res) => {
 
     const lineUserId = profileRes.data.userId;
     const displayName = profileRes.data.displayName;
+    const userId = state as string;
+    // 1. หา user ใน DB
+    const userResult = await pool.query(
+      'SELECT * FROM users WHERE id = $1',
+      [userId]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(400).send('ไม่พบผู้ใช้งานในระบบ');
+    }
+    // 2. UPDATE ข้อมูล line_user_id
+    await pool.query(
+      'UPDATE users SET line_user_id = $1 WHERE id = $2',
+      [lineUserId, userId]
+    );
 
-    // 3. SAVE ลง DB (ตัวอย่าง console ก่อน)
-    console.log('LINE USER ID:', lineUserId);
-    console.log('DISPLAY NAME:', displayName);
-
-    // ตรงนี้เอาไปผูกกับ user ในระบบคุณ
-    // saveLineUser(userId, lineUserId);
-
-    res.send(`
-      <h2>เชื่อมต่อ LINE สำเร็จ 🎉</h2>
-      <p>ชื่อ: ${displayName}</p>
-      <p>LINE UserId: ${lineUserId}</p>
-    `);
+    res.redirect(`${CLIENT_URL}/settings?line=success`);
 
   } catch (err: any) {
     console.error(err.response?.data || err);
