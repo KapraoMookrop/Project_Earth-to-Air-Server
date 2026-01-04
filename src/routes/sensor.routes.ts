@@ -59,7 +59,7 @@ router.get('/info', async (req: Request, res: Response) => {
     res.json(result.rows);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error});
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
@@ -71,6 +71,28 @@ router.get('/settings/:deviceId', async (req: Request, res: Response) => {
       [req.params.deviceId]
     );
     res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
+  }
+});
+
+router.get('/send-to-line/:userId', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM vw_report_to_line WHERE user_id = $1 LIMIT 1',
+      [req.params.userId]
+    );
+    const message = `📊 Earth-To-Air Status\n
+                      อุณหภูมิอากาศ: ${result.rows[0].temp_ambient} °C\n
+                      อุณหภูมิพื้นดิน: ${result.rows[0].temp_ground} °C\n
+                      ความชื้น: ${result.rows[0].humidity} %\n
+                      PM1.0: ${result.rows[0].pm1_0} µg/m³\n
+                      PM2.5: ${result.rows[0].pm2_5} µg/m³\n
+                      VOC Level: ${result.rows[0].voc_level} ppb\n
+                      ความเร็วลม: ${result.rows[0].wind_speed} m/s\n
+                      บันทึกล่าสุดเมื่อ: ${new Date(result.rows[0].recorded_at).toLocaleString()}`;
+    await NotifyService.sendLineMessage(result.rows[0].line_user_id, message);
+    res.status(201).json("ส่งการแจ้งเตือนไปยัง LINE เรียบร้อยแล้ว");
   } catch (error) {
     res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
@@ -106,7 +128,7 @@ router.get('/history/:deviceId/:type', async (req: Request, res: Response) => {
     res.json(result.rows);
 
   } catch (error) {
-    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error});
+    res.status(500).json({ error: 'เกิดข้อผิดพลาด' + error });
   }
 });
 
@@ -170,7 +192,6 @@ const LINE_CHANNEL_ID = process.env.LINE_CHANNEL_ID;
 const CALLBACK_URL = process.env.LINE_CALLBACK_URL;
 const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 const CLIENT_URL = process.env.CLIENT_URL;
-
 router.get('/auth/line/callback', async (req, res) => {
   const { code, state } = req.query;
   try {
@@ -224,6 +245,7 @@ router.get('/auth/line/callback', async (req, res) => {
     res.status(500).send('LINE Login Failed');
   }
 });
+
 
 
 
