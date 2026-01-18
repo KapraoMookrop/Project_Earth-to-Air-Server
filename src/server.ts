@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import sensorRoutes from './routes/sensor.routes.js';
+import manageUserRoutes from './routes/manageuser.routes.js';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api', sensorRoutes);
+app.use('/api/manage-user', manageUserRoutes);
 
 // Basic Health Check
 app.get('/', (req, res) => {
